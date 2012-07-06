@@ -43,7 +43,9 @@ module Rails
       end
 
       def set_session(env, sid, session_data, options = {})
-        session            = get_session_resource(env, sid)
+        # Use the find_session version because the first one will keep the flash object persistant
+        #session            = get_session_resource(env, sid)
+        session = find_session(sid)
         session.data       = session_data
         session.updated_at = DateTime.now if session.dirty?
         session.save ? sid : false
@@ -60,10 +62,12 @@ module Rails
       def find_session(sid)
         self.class.session_class.first_or_new(:session_id => sid)
       end
-      
+
       def destroy_session(env, sid = nil, options = {})
         sid ||= current_session_id(env)
         find_session(sid).destroy
+        env[SESSION_RECORD_KEY] = nil
+        generate_sid
       end
 
       def destroy(env)
